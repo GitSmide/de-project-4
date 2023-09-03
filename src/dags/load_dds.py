@@ -8,13 +8,13 @@ def load_data_to_dds():
     hook = PostgresHook(conn_id)
 
     insert_calendar_query = """
-    INSERT INTO dds.calendar ("timestamp", "date", "year", "month", "day")
+    INSERT INTO dds.calendar (timestamp_time, date_time, years, months, days)
     SELECT DISTINCT 
-        order_ts::timestamp AS "timestamp",
-        order_ts::date AS "date",
-        EXTRACT(YEAR FROM order_ts::timestamp)::smallint AS "year",
-        EXTRACT(MONTH FROM order_ts::timestamp)::smallint AS "month",
-        EXTRACT(DAY FROM order_ts::timestamp)::smallint AS "day"
+        order_ts::timestamp AS timestamp_time,
+        order_ts::date AS date_time,
+        EXTRACT(YEAR FROM order_ts::timestamp)::smallint AS years,
+        EXTRACT(MONTH FROM order_ts::timestamp)::smallint AS months,
+        EXTRACT(DAY FROM order_ts::timestamp)::smallint AS days
     FROM stg.deliveries
     """
 
@@ -31,16 +31,16 @@ def load_data_to_dds():
     """
 
     insert_deliveries_query = """
-    INSERT INTO dds.deliveries (order_id, calendar_id, courier_id, rate, "sum", tip_sum)
+    INSERT INTO dds.deliveries (order_id, calendar_id, courier_id, rate, total, tip_sum)
     SELECT DISTINCT 
         order_id,
         c.id AS calendar_id,
         courier_id,
         rate::smallint,
-        "sum"::int,
+        total::int,
         tip_sum::int
     FROM stg.deliveries d
-    INNER JOIN dds.calendar c ON d.order_ts::timestamp = c."timestamp"
+    INNER JOIN dds.calendar c ON d.order_ts::timestamp = c.timestamp_time
     """
 
     with hook.get_conn() as connection, connection.cursor() as cursor:

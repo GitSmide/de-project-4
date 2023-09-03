@@ -74,7 +74,7 @@ def load_data_to_staging():
             break
 
         with hook.get_conn() as connection, connection.cursor() as cursor:
-            insert_query = sql.SQL("INSERT INTO stg.deliveries (order_id, order_ts, delivery_id, courier_id, address, delivery_ts, rate, sum, tip_sum) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (order_id) DO NOTHING")
+            insert_query = sql.SQL("INSERT INTO stg.deliveries (order_id, order_ts, delivery_id, courier_id, address, delivery_ts, rate, total, tip_sum) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (order_id) DO NOTHING")
             for row in delivery_data:
                 cursor.execute(insert_query, (row['order_id'], row['order_ts'], row['delivery_id'], row['courier_id'], row['address'], row['delivery_ts'], row['rate'], row['sum'], row['tip_sum']))
 

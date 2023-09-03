@@ -4,11 +4,11 @@
 DROP TABLE IF EXISTS dds.calendar CASCADE;
 CREATE TABLE dds.calendar (
 id SERIAL PRIMARY KEY,
-"timestamp" TIMESTAMP UNIQUE,
-"date" DATE,
-"year" SMALLINT CHECK ("year" < 2090 AND "year" > 2000),
-"month" SMALLINT CHECK ("month" > 0 AND "month" < 13),
-"day" SMALLINT CHECK ("day" > 0 AND "day" < 32)
+timestamp_time TIMESTAMP UNIQUE, -- к 'timestamp' добавленно time
+date_time DATE, -- аналогично для 'date'
+years SMALLINT CHECK ("years" < 2090 AND "years" > 2000), 
+months SMALLINT CHECK ("months" > 0 AND "months" < 13),
+days SMALLINT CHECK ("days" > 0 AND "days" < 32) -- к заголовкам добавленно окончание -s
 );
 
 -- dds.couriers
@@ -32,7 +32,7 @@ order_id VARCHAR PRIMARY KEY,
 calendar_id INT REFERENCES dds.calendar(id),
 courier_id VARCHAR REFERENCES dds.couriers(id),
 rate SMALLINT CHECK ("rate" BETWEEN 1 AND 5),
-"sum" INT CHECK ("sum" > 0),
+total INT CHECK ("total" > 0), -- исправлено с "sum" на total
 tip_sum INT
 );
 
@@ -55,7 +55,7 @@ CREATE TABLE stg.deliveries (
     address TEXT NOT NULL,
     delivery_ts TIMESTAMP NOT NULL,
     rate SMALLINT NOT NULL,
-    "sum" INT NOT NULL,
+    total INT NOT NULL, -- -- исправлено с "sum" на total
     tip_sum INT NOT NULL
 );
 
@@ -75,25 +75,25 @@ WITH fst AS (
 SELECT
     d.courier_id,
     c.courier_name,
-    cal."year" AS settlement_year,
-    cal."month" AS settlement_month,
+    cal.years AS settlement_year,
+    cal.months AS settlement_month,
     COUNT(d.order_id) AS orders_count,
-    SUM(d."sum") AS orders_total_sum,
+    SUM(d.total) AS orders_total_sum,
     AVG(d.rate) AS rate_avg,
-    SUM(d."sum") * 0.25 AS order_processing_fee,
+    SUM(d.total) * 0.25 AS order_processing_fee,
     CASE
-        WHEN AVG(d.rate) < 4 THEN GREATEST(SUM(d."sum") * 0.05, 100)
+        WHEN AVG(d.rate) < 4 THEN GREATEST(SUM(d.total) * 0.05, 100)
         WHEN (AVG(d.rate) >= 4 AND AVG(d.rate) < 4.5) 
-        THEN GREATEST(SUM(d."sum") * 0.07, 150)
+        THEN GREATEST(SUM(d.total) * 0.07, 150)
         WHEN (AVG(d.rate) >= 4.5 AND AVG(d.rate) < 4.9)
-        THEN GREATEST(SUM(d."sum") * 0.08, 175)
-        WHEN AVG(d.rate) >= 4.9 THEN GREATEST(SUM(d."sum") * 0.1, 200)
+        THEN GREATEST(SUM(d.total) * 0.08, 175)
+        WHEN AVG(d.rate) >= 4.9 THEN GREATEST(SUM(d.total) * 0.1, 200)
     END AS courier_order_sum,
     SUM(d.tip_sum) AS courier_tips_sum
 FROM dds.deliveries d
 JOIN dds.couriers c ON d.courier_id = c.id
 JOIN dds.calendar cal ON d.calendar_id = cal.id
-GROUP BY d.courier_id, c.courier_name, cal."year", cal."month")
+GROUP BY d.courier_id, c.courier_name, cal.years, cal.months)
 
 SELECT courier_id,
 		courier_name,
